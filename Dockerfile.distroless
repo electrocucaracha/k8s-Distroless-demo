@@ -1,0 +1,47 @@
+FROM maven:3.8-openjdk-18 AS build
+
+WORKDIR /app
+
+COPY . /app
+
+RUN mvn clean install
+
+RUN jar xf ./target/mavenproject1-1.0-SNAPSHOT.jar && \
+    jdeps --ignore-missing-deps \
+    --recursive  \
+    --multi-release 18  \
+    --print-module-deps  \
+    --class-path 'BOOT-INF/lib/*'  \
+    target/mavenproject1-1.0-SNAPSHOT.jar > deps.info && \
+    jlink \
+    --verbose \
+    --add-modules "$(cat deps.info)" \
+    --strip-debug \
+    --no-man-pages \
+    --no-header-files \
+    --compress=2 \
+    --output /out/jre
+
+
+
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+RUN mkdir -p /out/tmp/ && ldd /out/jre/bin/java | awk 'NF == 4 { system("cp --parents " $3 " /out") }'
+
+FROM scratch
+
+ENV PATH=/jre/bin/
+
+WORKDIR /app
+
+COPY --from=build /out /
+COPY --from=build /app/target /app/target
+COPY --from=build \
+                /usr/lib64/ld-linux-*.so.* \
+                /usr/lib64/libm.so* \
+                /usr/lib64/librt.so* \
+                /lib64/
+
+USER 10000
+EXPOSE 8080
+
+CMD ["java", "-jar", "target/mavenproject1-1.0-SNAPSHOT.jar"]
