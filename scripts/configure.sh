@@ -21,6 +21,10 @@ source _utils.sh
 # NOTE: this env var is used by kind tool
 export KIND_CLUSTER_NAME=k8s
 
+get_status=""
+# shellcheck disable=SC2064
+trap "$get_status" ERR
+
 function _create_cluster {
     if ! sudo "$(command -v kind)" get clusters | grep -e "$KIND_CLUSTER_NAME"; then
         sudo -E kind create cluster --config cluster-config.yml
@@ -89,9 +93,12 @@ function _build_imgs {
 
 function main {
     sudo mkdir -p /var/local/images
+    get_status="sudo docker compose ps;"
     sudo docker compose up -d
 
+    get_status="kubectl get nodes; kubectl get pods -A;"
     _create_cluster
+    get_status="sudo docker images;"
     _build_imgs
 }
 
