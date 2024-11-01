@@ -20,7 +20,7 @@ export PKG_KREW_PLUGINS_LIST=" "
 
 # Install dependencies
 # NOTE: Shorten link -> https://github.com/electrocucaracha/pkg-mgr_scripts
-curl -fsSL http://bit.ly/install_pkg | PKG_COMMANDS_LIST="kind,kubectl,jq,units" PKG="docker pip" bash
+curl -fsSL http://bit.ly/install_pkg | PKG_COMMANDS_LIST="kind,kubectl,jq,units" PKG="docker pip" PKG_UPDATE="true" bash
 sudo pip install docker-squash
 
 if ! command -v trivy >/dev/null; then
