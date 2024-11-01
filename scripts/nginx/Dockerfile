@@ -92,7 +92,7 @@ COPY --from=build /out/ /
 # Copy dynamic linker
 COPY --from=build /lib64/ld-linux-*.so.* /lib64/
 
-EXPOSE 35000
+EXPOSE 5000
 
 USER 10000:10001
 STOPSIGNAL SIGTERM

@@ -29,7 +29,7 @@ function _create_cluster {
         sudo -E kind get kubeconfig | tee "$HOME/.kube/config"
 
         registry_dir="/etc/containerd/certs.d/localhost:5000"
-        registry_name="$(sudo docker ps --filter ancestor=registry:2 --format "{{.Names}}")"
+        registry_name="$(sudo docker ps --filter ancestor=electrocucaracha/nginx:vts --format "{{.Names}}")"
         for node in $(sudo -E kind get nodes); do
             sudo docker exec "${node}" mkdir -p "${registry_dir}"
             cat <<EOF | sudo docker exec -i "${node}" cp /dev/stdin "${registry_dir}/hosts.toml"
@@ -62,8 +62,8 @@ function _build_img {
     local dockerfile=${2-Dockerfile}
     local squash=${3-false}
 
-    before=$(curl -s http://localhost:5000/status/format/json | jq '.upstreamZones["::nogroups"][0].inBytes')
-    [[ $before == "null" ]] && before=0
+    before=$(curl -s http://localhost:5000/status/format/json | jq '.upstreamZones["::nogroups"][0].inBytes' || :)
+    [[ ${before-null} == "null" ]] && before=0
     if [[ -z $(sudo docker images "$name" -q) ]]; then
         sudo docker build --tag "$name" --file "$dockerfile" .
         [[ $squash != "false" ]] && sudo docker-squash "$name"

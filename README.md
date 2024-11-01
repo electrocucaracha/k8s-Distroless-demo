@@ -30,9 +30,9 @@ This demo project highlights the advantages of using Distroless containers by ev
 
 ### Outcomes
 
-- Successfully reduced image size from 841MB to just 39.5MB.
-- Lowered deployment time significantly, from 41.79 seconds to 10.04 seconds.
-- Achieved a 13x reduction in data transfer from the private local registry to the seven Kubernetes worker nodes.
+- Successfully reduced image size from 842MB to just 39.5MB.
+- Lowered deployment time significantly, from 44.78 seconds to 10.38 seconds.
+- Achieved +23x reduction in data transfer from the private local registry to the seven Kubernetes worker nodes.
 
 Using Distroless images can lead to monthly cost savings and minimize traffic congestion.
 
