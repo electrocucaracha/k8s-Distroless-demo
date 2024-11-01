@@ -19,7 +19,7 @@ services:
       - registry:docker-registry
     image: electrocucaracha/nginx:vts
     ports:
-      - 5000:5000/tcp
+      - 5001:5001/tcp
 volumes:
   images:
     driver: local

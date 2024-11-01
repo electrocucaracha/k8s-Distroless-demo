@@ -18,21 +18,21 @@ fi
 source scripts/_utils.sh
 
 function _get_stats {
-    before=$(curl -s http://localhost:5000/status/format/json | jq '.upstreamZones["::nogroups"][0].outBytes')
+    before=$(curl -s http://localhost:5001/status/format/json | jq '.upstreamZones["::nogroups"][0].outBytes')
     [[ $before == "null" ]] && before=0
     /usr/bin/time -f'Java Server deployment time: %E' kubectl rollout status deployment/java-server >/dev/null
     kubectl get pods -o jsonpath='{range .items[*]}{.spec.nodeName}{"\n"}{end}' | sort | uniq -c | sort -nr
-    after=$(curl -s http://localhost:5000/status/format/json | jq '.upstreamZones["::nogroups"][0].outBytes')
+    after=$(curl -s http://localhost:5001/status/format/json | jq '.upstreamZones["::nogroups"][0].outBytes')
     data_transf=$((after - before))
     info "Data Transfer: $(printf "%sB\nMB" "$data_transf" | units --quiet --one-line --compact)MB"
 }
 
 # Deploy initial version
 info "Deploy initial version of java web server"
-kubectl create deployment java-server --image localhost:5000/java-server:v1 --replicas 20
+kubectl create deployment java-server --image localhost:5001/java-server:v1 --replicas 20
 _get_stats
 
 # Deploy distroless image
 info "Upgrade the version of java web server"
-kubectl set image deployments/java-server java-server=localhost:5000/java-server:v2
+kubectl set image deployments/java-server java-server=localhost:5001/java-server:v2
 _get_stats

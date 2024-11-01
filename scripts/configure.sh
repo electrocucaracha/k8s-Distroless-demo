@@ -32,12 +32,12 @@ function _create_cluster {
         sudo chown -R "$USER": "$HOME/.kube"
         sudo -E kind get kubeconfig | tee "$HOME/.kube/config"
 
-        registry_dir="/etc/containerd/certs.d/localhost:5000"
+        registry_dir="/etc/containerd/certs.d/localhost:5001"
         registry_name="$(sudo docker ps --filter ancestor=electrocucaracha/nginx:vts --format "{{.Names}}")"
         for node in $(sudo -E kind get nodes); do
             sudo docker exec "${node}" mkdir -p "${registry_dir}"
             cat <<EOF | sudo docker exec -i "${node}" cp /dev/stdin "${registry_dir}/hosts.toml"
-[host."http://${registry_name}:5000"]
+[host."http://${registry_name}:5001"]
 EOF
         done
 
@@ -54,7 +54,7 @@ metadata:
   namespace: kube-public
 data:
   localRegistryHosting.v1: |
-    host: "localhost:5000"
+    host: "localhost:5001"
     help: "https://kind.sigs.k8s.io/docs/user/local-registry/"
 EOF
         # editorconfig-checker-enable
@@ -62,18 +62,18 @@ EOF
 }
 
 function _build_img {
-    local name="localhost:5000/java-server:$1"
+    local name="localhost:5001/java-server:$1"
     local dockerfile=${2-Dockerfile}
     local squash=${3-false}
 
-    before=$(curl -s http://localhost:5000/status/format/json | jq '.upstreamZones["::nogroups"][0].inBytes' || :)
+    before=$(curl -s http://localhost:5001/status/format/json | jq '.upstreamZones["::nogroups"][0].inBytes' || :)
     [[ ${before-null} == "null" ]] && before=0
     if [[ -z $(sudo docker images "$name" -q) ]]; then
         sudo docker build --tag "$name" --file "$dockerfile" .
         [[ $squash != "false" ]] && sudo docker-squash "$name"
         sudo docker push "$name"
     fi
-    after=$(curl -s http://localhost:5000/status/format/json | jq '.upstreamZones["::nogroups"][0].inBytes')
+    after=$(curl -s http://localhost:5001/status/format/json | jq '.upstreamZones["::nogroups"][0].inBytes')
     data_transf=$((after - before))
     info "Registry - Data Transfer: $(printf "%sB\nMB" "$data_transf" | units --quiet --one-line --compact)MB"
 
@@ -86,7 +86,7 @@ function _build_imgs {
 
     _build_img v1
     _build_img v2 Dockerfile.distroless "true"
-    curl -s http://localhost:5000/v2/java-server/tags/list | jq -r .
+    curl -s http://localhost:5001/v2/java-server/tags/list | jq -r .
 
     popd >/dev/null
 }

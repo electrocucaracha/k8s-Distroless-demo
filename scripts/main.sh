@@ -25,6 +25,6 @@ if [ "${CODESPACE_NAME-}" ]; then
     if ! command -v gh >/dev/null; then
         curl -s 'https://i.jpillora.com/cli/cli!?as=gh' | bash
     fi
-    gh codespace ports visibility "5000:public" -c "$CODESPACE_NAME"
+    gh codespace ports visibility "5001:public" -c "$CODESPACE_NAME"
     gh codespace ports -c "$CODESPACE_NAME"
 fi
