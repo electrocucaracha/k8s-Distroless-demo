@@ -20,7 +20,7 @@ source scripts/_utils.sh
 function _get_stats {
     before=$(curl -s http://localhost:5001/status/format/json | jq '.upstreamZones["::nogroups"][0].outBytes')
     [[ $before == "null" ]] && before=0
-    /usr/bin/time -f'Java Server deployment time: %E' kubectl rollout status deployment/java-server >/dev/null
+    time kubectl rollout status deployment/java-server >/dev/null
     kubectl get pods -o jsonpath='{range .items[*]}{.spec.nodeName}{"\n"}{end}' | sort | uniq -c | sort -nr
     after=$(curl -s http://localhost:5001/status/format/json | jq '.upstreamZones["::nogroups"][0].outBytes')
     data_transf=$((after - before))

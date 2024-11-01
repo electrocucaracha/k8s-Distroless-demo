@@ -27,7 +27,16 @@ trap "$get_status" ERR
 
 function _create_cluster {
     if ! sudo "$(command -v kind)" get clusters | grep -e "$KIND_CLUSTER_NAME"; then
-        sudo -E kind create cluster --config cluster-config.yml
+        # NOTE: Docker IPv6 is disable in codespaces which results in a failure (https://github.com/kubernetes-sigs/kind/issues/3748#issuecomment-2394487000)
+        if [[ ${CODESPACES-false} == "true" ]]; then
+            sudo docker network create -d=bridge \
+                -o com.docker.network.bridge.enable_ip_masquerade=true \
+                -o com.docker.network.driver.mtu=1500 \
+                --subnet fc00:f853:ccd:e793::/64 kind || :
+            sudo -E kind create cluster
+        else
+            sudo -E kind create cluster --config cluster-config.yml
+        fi
         mkdir -p "$HOME/.kube"
         sudo chown -R "$USER": "$HOME/.kube"
         sudo -E kind get kubeconfig | tee "$HOME/.kube/config"
