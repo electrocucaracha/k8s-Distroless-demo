@@ -17,6 +17,8 @@ fi
 
 source scripts/_utils.sh
 
+trap 'kubectl delete deployments/java-server --ignore-not-found' EXIT
+
 function _get_stats {
     before=$(curl -s http://127.0.0.1:5001/status/format/json | jq '.upstreamZones["::nogroups"][0].outBytes')
     [[ $before == "null" ]] && before=0
@@ -29,10 +31,22 @@ function _get_stats {
 
 # Deploy initial version
 info "Deploy initial version of java web server"
-kubectl create deployment java-server --image 127.0.0.1:5001/java-server:v1 --replicas 20
+kubectl create deployment java-server --image "$(sudo docker images --filter=reference='*/java-server:v1' --format "{{.Repository}}"):v1" --replicas 20
 _get_stats
 
 # Deploy distroless image
 info "Upgrade the version of java web server"
-kubectl set image deployments/java-server java-server=127.0.0.1:5001/java-server:v2
+kubectl set image deployments/java-server java-server="$(sudo docker images --filter=reference='*/java-server:v2' --format "{{.Repository}}"):v2"
+_get_stats
+
+# Warm-up stats
+
+# Roll back previous image
+info "Roll back the version of java web server"
+kubectl set image deployments/java-server java-server="$(sudo docker images --filter=reference='*/java-server:v1' --format "{{.Repository}}"):v1"
+_get_stats
+
+# Roll back to distroless image
+info "Roll back the version of java web server"
+kubectl set image deployments/java-server java-server="$(sudo docker images --filter=reference='*/java-server:v2' --format "{{.Repository}}"):v2"
 _get_stats

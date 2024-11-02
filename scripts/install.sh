@@ -28,5 +28,7 @@ if ! command -v trivy >/dev/null; then
     echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb generic main" | sudo tee -a /etc/apt/sources.list.d/trivy.list
     sudo apt-get update
     sudo apt-get install trivy -y
+    newgrp docker <<BASH
     trivy image --download-java-db-only --quiet || :
+BASH
 fi

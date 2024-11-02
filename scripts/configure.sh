@@ -22,6 +22,8 @@ source _utils.sh
 export KIND_CLUSTER_NAME=k8s
 
 get_status=""
+registry_ip=""
+
 # shellcheck disable=SC2064
 trap "$get_status" ERR
 
@@ -41,18 +43,20 @@ function _create_cluster {
         sudo chown -R "$USER": "$HOME/.kube"
         sudo -E kind get kubeconfig | tee "$HOME/.kube/config"
 
-        registry_dir="/etc/containerd/certs.d/127.0.0.1:5001"
+        # NOTE: Connecting to the KinD network here guarantees the order of the IP addresess
         registry_name="$(sudo docker ps --filter ancestor=electrocucaracha/nginx:vts --format "{{.Names}}")"
-        for node in $(sudo -E kind get nodes); do
-            sudo docker exec "${node}" mkdir -p "${registry_dir}"
-            cat <<EOF | sudo docker exec -i "${node}" cp /dev/stdin "${registry_dir}/hosts.toml"
-[host."http://${registry_name}:5001"]
-EOF
-        done
-
         if [ "$(sudo docker inspect -f='{{json .NetworkSettings.Networks.kind}}' "${registry_name}")" = 'null' ]; then
             sudo docker network connect kind "${registry_name}"
         fi
+
+        registry_ip="$(sudo docker inspect --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{"\n"}}{{end}}' "$registry_name" | awk 'NR==1{print $1}')"
+        registry_dir="/etc/containerd/certs.d/$registry_ip:5001"
+        for node in $(sudo -E docker ps --filter name=k8s --quiet); do
+            sudo docker exec "${node}" mkdir -p "${registry_dir}"
+            cat <<EOF | sudo docker exec -i "${node}" cp /dev/stdin "${registry_dir}/hosts.toml"
+[host."http://${registry_ip}:5001"]
+EOF
+        done
 
         # editorconfig-checker-disable
         cat <<EOF | kubectl apply -f -
@@ -63,7 +67,7 @@ metadata:
   namespace: kube-public
 data:
   localRegistryHosting.v1: |
-    host: "127.0.0.1:5001"
+    host: "$registry_ip:5001"
     help: "https://kind.sigs.k8s.io/docs/user/local-registry/"
 EOF
         # editorconfig-checker-enable
@@ -71,12 +75,12 @@ EOF
 }
 
 function _build_img {
-    local name="127.0.0.1:5001/java-server:$1"
+    local name="${registry_ip}:5001/java-server:$1"
     local dockerfile=${2-Dockerfile}
     local squash=${3-false}
 
-    curl -s http://127.0.0.1:5001/v2/_catalog | jq -r .
-    before=$(curl -s http://127.0.0.1:5001/status/format/json | jq '.upstreamZones["::nogroups"][0].inBytes' || :)
+    curl -s "http://${registry_ip}:5001/v2/_catalog" | jq -r .
+    before=$(curl -s "http://${registry_ip}:5001/status/format/json" | jq '.upstreamZones["::nogroups"][0].inBytes' || :)
     [[ ${before-null} == "null" ]] && before=0
     if [[ -z $(sudo docker images "$name" -q) ]]; then
         if [[ $squash != "false" ]]; then
@@ -87,12 +91,14 @@ function _build_img {
             sudo docker build --tag "$name" --file "$dockerfile" --push .
         fi
     fi
-    after=$(curl -s http://127.0.0.1:5001/status/format/json | jq '.upstreamZones["::nogroups"][0].inBytes')
+    after=$(curl -s "http://${registry_ip}:5001/status/format/json" | jq '.upstreamZones["::nogroups"][0].inBytes')
     data_transf=$((after - before))
     info "Registry - Data Transfer: $(printf "%sB\nMB" "$data_transf" | units --quiet --one-line --compact)MB"
 
     info "$name - Image security issues"
+    newgrp docker <<BASH
     trivy image "$name" --quiet || :
+BASH
 }
 
 function _build_imgs {
@@ -100,7 +106,8 @@ function _build_imgs {
 
     _build_img v1
     _build_img v2 Dockerfile.distroless "true"
-    curl -s http://127.0.0.1:5001/v2/java-server/tags/list | jq -r .
+    curl -s "http://${registry_ip}:5001/v2/java-server/tags/list" | jq -r .
+    sudo docker system prune -f
 
     popd >/dev/null
 }
