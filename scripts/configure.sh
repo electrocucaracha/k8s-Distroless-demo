@@ -35,10 +35,8 @@ function _create_cluster {
                 -o com.docker.network.bridge.enable_ip_masquerade=true \
                 -o com.docker.network.driver.mtu=1500 \
                 --subnet fc00:f853:ccd:e793::/64 kind || :
-            sudo -E kind create cluster
-        else
-            sudo -E kind create cluster --config cluster-config.yml
         fi
+        sudo -E kind create cluster --config "cluster-config${CODESPACES-}.yml"
         mkdir -p "$HOME/.kube"
         sudo chown -R "$USER": "$HOME/.kube"
         sudo -E kind get kubeconfig | tee "$HOME/.kube/config"
@@ -50,6 +48,7 @@ function _create_cluster {
         fi
 
         registry_ip="$(sudo docker inspect --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{"\n"}}{{end}}' "$registry_name" | awk 'NR==1{print $1}')"
+        jq '.["insecure-registries"] += ["'"$registry_ip"':5001"]' /etc/docker/daemon.json >/tmp/daemon.json && sudo mv /tmp/daemon.json /etc/docker/daemon.json
         registry_dir="/etc/containerd/certs.d/$registry_ip:5001"
         for node in $(sudo -E docker ps --filter name=k8s --quiet); do
             sudo docker exec "${node}" mkdir -p "${registry_dir}"
@@ -84,11 +83,11 @@ function _build_img {
     [[ ${before-null} == "null" ]] && before=0
     if [[ -z $(sudo docker images "$name" -q) ]]; then
         if [[ $squash != "false" ]]; then
-            sudo docker build --tag "$name" --file "$dockerfile" .
+            sudo docker build --tag "$name" --file "$dockerfile" --output=type=registry,registry.insecure=true .
             sudo docker-squash "$name"
             sudo docker push "$name"
         else
-            sudo docker build --tag "$name" --file "$dockerfile" --push .
+            sudo docker build --tag "$name" --file "$dockerfile" --push --output=type=registry,registry.insecure=true .
         fi
     fi
     after=$(curl -s "http://${registry_ip}:5001/status/format/json" | jq '.upstreamZones["::nogroups"][0].inBytes')
