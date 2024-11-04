@@ -94,10 +94,18 @@ function _build_img {
     data_transf=$((after - before))
     info "Registry - Data Transfer: $(printf "%sB\nMB" "$data_transf" | units --quiet --one-line --compact)MB"
 
-    info "$name - Image security issues"
-    newgrp docker <<BASH
+    if command -v trivy >/dev/null; then
+        info "$name - Image security issues"
+        newgrp docker <<BASH
     trivy image "$name" --quiet || :
 BASH
+    fi
+    if command -v dive >/dev/null; then
+        info "$name - Image security issues"
+        newgrp docker <<BASH
+    CI=true dive "$name"
+BASH
+    fi
 }
 
 function _build_imgs {
@@ -107,6 +115,7 @@ function _build_imgs {
     _build_img v2 Dockerfile.distroless "true"
     curl -s "http://${registry_ip}:5001/v2/java-server/tags/list" | jq -r .
     sudo docker system prune -f
+    sudo docker images
 
     popd >/dev/null
 }

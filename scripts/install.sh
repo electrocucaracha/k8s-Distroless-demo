@@ -32,3 +32,7 @@ if ! command -v trivy >/dev/null; then
     trivy image --download-java-db-only --quiet || :
 BASH
 fi
+
+if ! command -v dive >/dev/null; then
+    curl -s "https://i.jpillora.com/wagoodman/dive!" | bash
+fi
