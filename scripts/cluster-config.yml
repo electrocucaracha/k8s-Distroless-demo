@@ -23,16 +23,9 @@ kubeadmConfigPatches:
     serializeImagePulls: false
 nodes:
   - role: control-plane
-    image: kindest/node:v1.31.1
   - role: worker
-    image: kindest/node:v1.31.1
   - role: worker
-    image: kindest/node:v1.31.1
   - role: worker
-    image: kindest/node:v1.31.1
   - role: worker
-    image: kindest/node:v1.31.1
   - role: worker
-    image: kindest/node:v1.31.1
   - role: worker
-    image: kindest/node:v1.31.1

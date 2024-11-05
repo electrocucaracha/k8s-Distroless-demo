@@ -36,3 +36,6 @@ fi
 if ! command -v dive >/dev/null; then
     curl -s "https://i.jpillora.com/wagoodman/dive!" | bash
 fi
+
+sudo docker buildx create --use --name lazy-builder --buildkitd-flags '--oci-worker-snapshotter=stargz'
+sudo docker buildx inspect --bootstrap lazy-builder

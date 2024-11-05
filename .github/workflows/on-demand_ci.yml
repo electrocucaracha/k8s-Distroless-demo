@@ -36,12 +36,19 @@ jobs:
     name: Check smoke tests
     needs: check-scripts-format
     runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - enable_stargz_snapshotter: true
+          - enable_stargz_snapshotter: false
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # 4.2.2
       - name: Setup environment
         working-directory: ./scripts
         env:
           DEBUG: true
+          ENABLE_STARGZ_SNAPSHOTTER: ${{ matrix.enable_stargz_snapshotter }}
         run: ./main.sh
       - name: Run Distroless demo
         run: ./demo.sh

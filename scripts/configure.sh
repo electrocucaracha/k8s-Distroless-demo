@@ -36,7 +36,13 @@ function _create_cluster {
                 -o com.docker.network.driver.mtu=1500 \
                 --subnet fc00:f853:ccd:e793::/64 kind || :
         fi
-        sudo -E kind create cluster --config "cluster-config${CODESPACES-}.yml"
+        kind_img_tag="v$(curl -sL https://registry.hub.docker.com/v2/repositories/kindest/node/tags | python -c 'import json,sys,re;versions=[obj["name"][1:] for obj in json.load(sys.stdin)["results"] if re.match("^v?(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$",obj["name"])];print("\n".join(versions))' | uniq | sort -rn | head -n 1)"
+        stargz_tag="stargz-snapshotter"
+        if [[ ${ENABLE_STARGZ_SNAPSHOTTER-false} == "true" ]]; then
+            kind_img_tag="$stargz_tag"
+            [[ -z $(sudo docker images "kindest/node:$stargz_tag" -q) ]] && sudo docker build -t "kindest/node:$kind_img_tag" https://github.com/containerd/stargz-snapshotter.git
+        fi
+        sudo -E kind create cluster --config "cluster-config${CODESPACES-}.yml" --image "kindest/node:$kind_img_tag"
         mkdir -p "$HOME/.kube"
         sudo chown -R "$USER": "$HOME/.kube"
         sudo -E kind get kubeconfig | tee "$HOME/.kube/config"
@@ -74,6 +80,9 @@ EOF
 }
 
 function _build_img {
+    registry_name="$(sudo docker ps --filter ancestor=electrocucaracha/nginx:vts --format "{{.Names}}")"
+    registry_ip="$(sudo docker inspect --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{"\n"}}{{end}}' "$registry_name" | awk 'NR==1{print $1}')"
+
     local name="${registry_ip}:5001/java-server:$1"
     local dockerfile=${2-Dockerfile}
     local squash=${3-false}
@@ -82,13 +91,9 @@ function _build_img {
     before=$(curl -s "http://${registry_ip}:5001/status/format/json" | jq '.upstreamZones["::nogroups"][0].inBytes' || :)
     [[ ${before-null} == "null" ]] && before=0
     if [[ -z $(sudo docker images "$name" -q) ]]; then
-        if [[ $squash != "false" ]]; then
-            sudo docker build --tag "$name" --file "$dockerfile" --output=type=registry,registry.insecure=true .
-            sudo docker-squash "$name"
-            sudo docker push "$name"
-        else
-            sudo docker build --tag "$name" --file "$dockerfile" --push --output=type=registry,registry.insecure=true .
-        fi
+        sudo docker buildx build --load --tag "$name" --file "$dockerfile" .
+        [[ $squash != "false" ]] && sudo docker-squash "$name"
+        sudo docker push "$name"
     fi
     after=$(curl -s "http://${registry_ip}:5001/status/format/json" | jq '.upstreamZones["::nogroups"][0].inBytes')
     data_transf=$((after - before))
@@ -113,6 +118,8 @@ function _build_imgs {
 
     _build_img v1
     _build_img v2 Dockerfile.distroless "true"
+    registry_name="$(sudo docker ps --filter ancestor=electrocucaracha/nginx:vts --format "{{.Names}}")"
+    registry_ip="$(sudo docker inspect --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{"\n"}}{{end}}' "$registry_name" | awk 'NR==1{print $1}')"
     curl -s "http://${registry_ip}:5001/v2/java-server/tags/list" | jq -r .
     sudo docker system prune -f
     sudo docker images
