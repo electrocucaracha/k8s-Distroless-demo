@@ -19,8 +19,6 @@ on:
       - submitted
 jobs:
   check-scripts-format:
-    if: >-
-      ( github.event_name == 'pull_request_review' && github.event.review.state == 'approved' ) || github.event_name != 'pull_request_review'
     name: Check scripts format
     runs-on: ubuntu-latest
     steps:
@@ -33,6 +31,8 @@ jobs:
         with:
           sh_checker_shellcheck_disable: true
   smoke-test:
+    if: >-
+      ( github.event_name == 'pull_request_review' && github.event.review.state == 'approved' ) || github.event_name != 'pull_request_review'
     name: Check smoke tests
     needs: check-scripts-format
     runs-on: ubuntu-20.04
@@ -52,3 +52,11 @@ jobs:
         run: ./main.sh
       - name: Run Distroless demo
         run: ./demo.sh
+  benchmark-task:
+    name: Run benchmark pull task
+    needs: check-scripts-format
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # 4.2.2
+      - name: Run benckmarks
+        run: ./benchmark.sh
