@@ -47,6 +47,10 @@ function _create_cluster {
         sudo chown -R "$USER": "$HOME/.kube"
         sudo -E kind get kubeconfig | tee "$HOME/.kube/config"
 
+        if [[ ${ENABLE_DRANGONFLY-false} == "true" ]]; then
+            helm repo add dragonfly https://dragonflyoss.github.io/helm-charts/
+            helm install --wait --create-namespace --namespace dragonfly-system dragonfly dragonfly/dragonfly
+        fi
         # NOTE: Connecting to the KinD network here guarantees the order of the IP addresess
         registry_name="$(sudo docker ps --filter ancestor=electrocucaracha/nginx:vts --format "{{.Names}}")"
         if [ "$(sudo docker inspect -f='{{json .NetworkSettings.Networks.kind}}' "${registry_name}")" = 'null' ]; then

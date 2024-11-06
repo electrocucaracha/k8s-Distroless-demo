@@ -51,6 +51,7 @@ Vagrant.configure('2') do |config|
   config.vm.provision 'shell', privileged: false do |sh|
     sh.env = {
       ENABLE_STARGZ_SNAPSHOTTER: ENV.fetch('ENABLE_STARGZ_SNAPSHOTTER', false),
+      ENABLE_DRANGONFLY: ENV.fetch('ENABLE_DRANGONFLY', false),
       DEBUG: ENV.fetch('DEBUG', true)
     }
     sh.inline = <<-SHELL
