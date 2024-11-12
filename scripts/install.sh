@@ -17,6 +17,7 @@ if [[ ${DEBUG:-false} == "true" ]]; then
 fi
 
 export PKG_KREW_PLUGINS_LIST=" "
+export PKG_DOCKER_INSTALL_DIVE="true"
 
 # Install dependencies
 # NOTE: Shorten link -> https://github.com/electrocucaracha/pkg-mgr_scripts
@@ -31,10 +32,6 @@ if ! command -v trivy >/dev/null; then
     newgrp docker <<BASH
     trivy image --download-java-db-only --quiet || :
 BASH
-fi
-
-if ! command -v dive >/dev/null; then
-    curl -s "https://i.jpillora.com/wagoodman/dive!" | bash
 fi
 
 sudo docker buildx create --use --name lazy-builder --buildkitd-flags '--oci-worker-snapshotter=stargz'
