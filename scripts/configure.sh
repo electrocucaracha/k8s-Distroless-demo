@@ -110,7 +110,7 @@ function _build_img {
 BASH
     fi
     if command -v dive >/dev/null; then
-        info "$name - Image security issues"
+        info "$name - Image layers"
         newgrp docker <<BASH
     CI=true dive "$name"
 BASH

@@ -22,8 +22,6 @@ RUN jar xf ./target/mavenproject1-1.0-SNAPSHOT.jar && \
     --compress=2 \
     --output /out/jre
 
-
-
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 RUN mkdir -p /out/tmp/ && ldd /out/jre/bin/java | awk 'NF == 4 { system("cp --parents " $3 " /out") }'
 
