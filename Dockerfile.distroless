@@ -6,13 +6,13 @@ COPY . /app
 
 RUN mvn clean install
 
-RUN jar xf ./target/mavenproject1-1.0-SNAPSHOT.jar && \
+RUN jar xf ./target/server-1.0-SNAPSHOT.jar && \
     jdeps --ignore-missing-deps \
     --recursive  \
     --multi-release 18  \
     --print-module-deps  \
     --class-path 'BOOT-INF/lib/*'  \
-    target/mavenproject1-1.0-SNAPSHOT.jar > deps.info && \
+    target/server-1.0-SNAPSHOT.jar > deps.info && \
     jlink \
     --verbose \
     --add-modules "$(cat deps.info)" \
@@ -42,4 +42,4 @@ COPY --from=build \
 USER 10000
 EXPOSE 8080
 
-CMD ["java", "-jar", "target/mavenproject1-1.0-SNAPSHOT.jar"]
+CMD ["java", "-jar", "target/server-1.0-SNAPSHOT.jar"]
