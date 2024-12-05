@@ -2,3 +2,4 @@ node_modules/
 package*
 .vagrant
 bench.json
+target/
