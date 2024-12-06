@@ -1,0 +1,25 @@
+FROM ghcr.io/graalvm/native-image-community:23 AS build
+
+RUN microdnf install -y maven
+
+WORKDIR /app
+
+COPY . /app
+
+RUN mvn -Pnative package
+
+RUN mkdir -p /out && ldd /app/target/server | awk 'NF == 4 { system("cp --parents " $3 " /out") }'
+RUN mkdir -p /out2 && cp --parents /usr/lib*/ld-linux-*.so.* /out2
+
+FROM scratch
+
+WORKDIR /app
+
+COPY --from=build /out /
+COPY --from=build /app/target/server ./
+COPY --from=build /out2/usr /
+
+USER 10000
+EXPOSE 8080
+
+ENTRYPOINT ["./server"]

@@ -122,6 +122,7 @@ function _build_imgs {
 
     _build_img v1
     _build_img v2 Dockerfile.distroless "true"
+    _build_img v3 Dockerfile.graalvm "true"
     registry_name="$(sudo docker ps --filter ancestor=electrocucaracha/nginx:vts --format "{{.Names}}")"
     registry_ip="$(sudo docker inspect --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{"\n"}}{{end}}' "$registry_name" | awk 'NR==1{print $1}')"
     curl -s "http://${registry_ip}:5001/v2/java-server/tags/list" | jq -r .

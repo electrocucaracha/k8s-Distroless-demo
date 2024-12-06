@@ -30,23 +30,16 @@ function _get_stats {
 }
 
 # Deploy initial version
-info "Deploy initial version of java web server"
+info "Deploy version 1 of java web server"
 kubectl create deployment java-server --image "$(sudo docker images --filter=reference='*/java-server:v1' --format "{{.Repository}}"):v1" --replicas 20
 _get_stats
 
-# Deploy distroless image
-info "Upgrade the version of java web server"
+# Deploy distroless jdeps/jlink image
+info "Upgrade java web server to version 2"
 kubectl set image deployments/java-server java-server="$(sudo docker images --filter=reference='*/java-server:v2' --format "{{.Repository}}"):v2"
 _get_stats
 
-# Warm-up stats
-
-# Roll back previous image
-info "Roll back the version of java web server"
-kubectl set image deployments/java-server java-server="$(sudo docker images --filter=reference='*/java-server:v1' --format "{{.Repository}}"):v1"
-_get_stats
-
-# Roll back to distroless image
-info "Roll back the version of java web server"
-kubectl set image deployments/java-server java-server="$(sudo docker images --filter=reference='*/java-server:v2' --format "{{.Repository}}"):v2"
+# Deploy distroless graalvm image
+info "Upgrade java web server to version 3"
+kubectl set image deployments/java-server java-server="$(sudo docker images --filter=reference='*/java-server:v2' --format "{{.Repository}}"):v3"
 _get_stats
