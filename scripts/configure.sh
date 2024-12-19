@@ -60,6 +60,7 @@ function _create_cluster {
         registry_ip="$(sudo docker inspect --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{"\n"}}{{end}}' "$registry_name" | awk 'NR==1{print $1}')"
         jq '.["insecure-registries"] += ["'"$registry_ip"':5001"]' /etc/docker/daemon.json >/tmp/daemon.json && sudo mv /tmp/daemon.json /etc/docker/daemon.json
         registry_dir="/etc/containerd/certs.d/$registry_ip:5001"
+        regctl registry set "${registry_ip}:5001" --tls disabled
         for node in $(sudo -E docker ps --filter name=k8s --quiet); do
             sudo docker exec "${node}" mkdir -p "${registry_dir}"
             cat <<EOF | sudo docker exec -i "${node}" cp /dev/stdin "${registry_dir}/hosts.toml"
@@ -102,6 +103,8 @@ function _build_img {
     after=$(curl -s "http://${registry_ip}:5001/status/format/json" | jq '.upstreamZones["::nogroups"][0].inBytes')
     data_transf=$((after - before))
     info "Registry - Data Transfer: $(printf "%sB\nMB" "$data_transf" | units --quiet --one-line --compact)MB"
+    info "Image inspection:"
+    regctl image inspect "$name"
 
     if command -v trivy >/dev/null; then
         info "$name - Image security issues"

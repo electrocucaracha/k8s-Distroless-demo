@@ -18,6 +18,7 @@ fi
 
 export PKG_KREW_PLUGINS_LIST=" "
 export PKG_DOCKER_INSTALL_DIVE="true"
+export PKG_DOCKER_INSTALL_REGCTL="true"
 
 # Install dependencies
 # NOTE: Shorten link -> https://github.com/electrocucaracha/pkg-mgr_scripts
@@ -36,3 +37,9 @@ fi
 
 sudo docker buildx create --use --name lazy-builder --buildkitd-flags '--oci-worker-snapshotter=stargz'
 sudo docker buildx inspect --bootstrap lazy-builder
+
+! grep -q 172.19.0.3 /etc/docker/daemon.json && jq '.["insecure-registries"] += ["172.19.0.3:5001"]' /etc/docker/daemon.json >/tmp/daemon.json && sudo mv /tmp/daemon.json /etc/docker/daemon.json
+if [[ ${CODESPACES-false} == "true" ]]; then
+    sudo pkill dockerd && sudo pkill containerd
+    /usr/local/share/docker-init.sh
+fi
