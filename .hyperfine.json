@@ -1,0 +1,5 @@
+[
+  { "name": "raw", "command": "./run.sh v1" },
+  { "name": "distroless", "command": "./run.sh v2" },
+  { "name": "graalvm", "command": "./run.sh v3" }
+]

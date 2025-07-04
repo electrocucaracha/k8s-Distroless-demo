@@ -58,5 +58,6 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # 4.2.2
-      - name: Run benckmarks
-        run: ./benchmark.sh
+      - name: Build docker images
+        run: ./build.sh
+      - uses: blacha/hyperfine-action@aeb7e4783b689f9c2d13d198f5d1566432cc6002 # 1.1
