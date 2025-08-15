@@ -22,7 +22,7 @@ jobs:
     name: Check scripts format
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # 4.2.2
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # 5.0.0
       - name: Run the sh-checker
         uses: luizm/action-sh-checker@17bd25a6ee188d2b91f677060038f4ba37ba14b2 # 0.9.0
         env:
@@ -43,7 +43,7 @@ jobs:
           - enable_stargz_snapshotter: true
           - enable_stargz_snapshotter: false
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # 4.2.2
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # 5.0.0
       - name: Setup environment
         working-directory: ./scripts
         env:
@@ -57,7 +57,7 @@ jobs:
     needs: check-scripts-format
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # 4.2.2
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # 5.0.0
       - name: Build docker images
         run: ./build.sh
       - uses: blacha/hyperfine-action@aeb7e4783b689f9c2d13d198f5d1566432cc6002 # 1.1
